@@ -94,7 +94,7 @@
         let accelerometer = null;
         let lastUpdateTime = 0;
         let lastDisplayedAngle = null;
-        const UPDATE_INTERVAL = 1000; // Update once per second
+        const UPDATE_INTERVAL = 300; // Update once per second
         const MIN_ANGLE_CHANGE = 0.7; // Minimum change in degrees to trigger update
 
         // Check if we need permission (iOS 13+)
@@ -183,7 +183,13 @@
                     // Update display with subtle fade effect
                     angleDisplay.style.opacity = '0.7';
                     setTimeout(() => {
-                        angleDisplay.textContent = roundedAngle + '°';
+                        if (roundedAngle > 120) {
+                            angleDisplay.textContent = "This isn't for slab climbing.";
+                            angleDisplay.style.fontSize = '48px';
+                        } else {
+                            angleDisplay.textContent = roundedAngle + '°';
+                            angleDisplay.style.fontSize = '120px';
+                        }
                         angleDisplay.style.opacity = '1';
                     }, 150);
                 }
