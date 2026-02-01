@@ -120,6 +120,31 @@
             font-size: 0.8rem;
             margin-top: 10px;
         }
+        
+        .debug-display {
+            margin-top: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.8;
+        }
+        
+        .debug-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .debug-label {
+            font-weight: bold;
+            color: #ffd93d;
+        }
+        
+        .debug-value {
+            color: #a8e6cf;
+        }
     </style>
 </head>
 <body>
@@ -136,6 +161,22 @@
         
         <button id="startButton">Enable Orientation Tracking</button>
         <button id="resetButton" style="display: none;">Reset Zero Position</button>
+        
+        <div class="debug-display" id="debugDisplay" style="display: none;">
+            <div style="font-weight: bold; margin-bottom: 10px; color: #ffd93d;">RAW SENSOR DATA (in degrees):</div>
+            <div class="debug-row">
+                <span class="debug-label">Alpha (Z-axis / Compass):</span>
+                <span class="debug-value" id="alphaValue">--</span>
+            </div>
+            <div class="debug-row">
+                <span class="debug-label">Beta (X-axis / Tilt front-back):</span>
+                <span class="debug-value" id="betaValue">--</span>
+            </div>
+            <div class="debug-row">
+                <span class="debug-label">Gamma (Y-axis / Tilt left-right):</span>
+                <span class="debug-value" id="gammaValue">--</span>
+            </div>
+        </div>
         
         <div class="status" id="status"></div>
         <div class="error" id="error" style="display: none;"></div>
@@ -156,11 +197,16 @@
         const logContainer = document.getElementById('logContainer');
         const logDisplay = document.getElementById('logDisplay');
         const clearButton = document.getElementById('clearButton');
+        const debugDisplay = document.getElementById('debugDisplay');
+        const alphaValue = document.getElementById('alphaValue');
+        const betaValue = document.getElementById('betaValue');
+        const gammaValue = document.getElementById('gammaValue');
         
         let isTracking = false;
         let logCount = 0;
         const maxLogs = 50; // Keep last 50 logs
         let initialAlpha = null; // Store the initial orientation
+        let lastLogTime = 0; // Throttle logs to once per second
         
         function showError(message) {
             errorDiv.textContent = message;
@@ -203,22 +249,38 @@
         }
         
         function handleOrientation(event) {
-            // Alpha is the compass direction (Z-axis rotation)
-            // 0 degrees = North, increases clockwise
-            // Range: 0 to 360 degrees
-            const alpha = event.alpha;
-            const beta = event.beta;   // X-axis (front-to-back tilt)
-            const gamma = event.gamma; // Y-axis (left-to-right tilt)
+            // Get all three axes (all values are in DEGREES, not radians)
+            const alpha = event.alpha;  // Z-axis: compass direction (0-360°)
+            const beta = event.beta;    // X-axis: front-to-back tilt (-180 to 180°)
+            const gamma = event.gamma;  // Y-axis: left-to-right tilt (-90 to 90°)
+            
+            // Update debug display with raw values
+            if (alpha !== null) {
+                alphaValue.textContent = `${Math.round(alpha * 10) / 10}°`;
+            } else {
+                alphaValue.textContent = 'null';
+            }
+            
+            if (beta !== null) {
+                betaValue.textContent = `${Math.round(beta * 10) / 10}°`;
+            } else {
+                betaValue.textContent = 'null';
+            }
+            
+            if (gamma !== null) {
+                gammaValue.textContent = `${Math.round(gamma * 10) / 10}°`;
+            } else {
+                gammaValue.textContent = 'null';
+            }
             
             if (alpha !== null) {
                 // Set initial orientation on first reading
                 if (initialAlpha === null) {
                     initialAlpha = alpha;
-                    addLog(`Initial compass heading set: ${Math.round(alpha * 10) / 10}°`);
+                    addLog(`Initial alpha (compass) set: ${Math.round(alpha * 10) / 10}°`);
                 }
                 
                 // Calculate relative rotation from initial position
-                // Rotating left (counter-clockwise) should increase the value
                 let relativeOrientation = alpha - initialAlpha;
                 
                 // Normalize to -180 to 180 range
@@ -241,8 +303,12 @@
                 const roundedOrientation = Math.round(relativeOrientation * 10) / 10;
                 orientationDisplay.textContent = `${roundedOrientation}°`;
                 
-                // Log Z-axis orientation to the display
-                addLog(`Z-axis orientation: ${roundedOrientation}°`);
+                // Throttle logs to once per second
+                const now = Date.now();
+                if (now - lastLogTime >= 1000) {
+                    addLog(`Relative: ${roundedOrientation}° | Raw Alpha: ${Math.round(alpha * 10) / 10}° | Beta: ${Math.round(beta * 10) / 10}° | Gamma: ${Math.round(gamma * 10) / 10}°`);
+                    lastLogTime = now;
+                }
             } else {
                 orientationDisplay.textContent = 'N/A';
                 addLog('Orientation data not available');
@@ -291,12 +357,13 @@
             startButton.disabled = true;
             startButton.style.opacity = '0.6';
             
-            // Show the reset button and log container
+            // Show the reset button, debug display, and log container
             resetButton.style.display = 'inline-block';
+            debugDisplay.style.display = 'block';
             logContainer.style.display = 'block';
             
             showStatus('Tracking orientation...');
-            addLog('Orientation tracking started');
+            addLog('Orientation tracking started - watch the raw sensor values above');
             addLog('Your current position will be set as 0° on first reading');
         }
         
