@@ -205,7 +205,7 @@
         let isTracking = false;
         let logCount = 0;
         const maxLogs = 50; // Keep last 50 logs
-        let initialAlpha = null; // Store the initial orientation
+        let initialGamma = null; // Store the initial gamma orientation
         let lastLogTime = 0; // Throttle logs to once per second
         
         function showError(message) {
@@ -244,7 +244,7 @@
         }
         
         function resetZeroPosition() {
-            initialAlpha = null;
+            initialGamma = null;
             addLog('Zero position will be reset on next reading');
         }
         
@@ -273,28 +273,19 @@
                 gammaValue.textContent = 'null';
             }
             
-            if (alpha !== null) {
+            if (gamma !== null) {
                 // Set initial orientation on first reading
-                if (initialAlpha === null) {
-                    initialAlpha = alpha;
-                    addLog(`Initial alpha (compass) set: ${Math.round(alpha * 10) / 10}°`);
+                if (initialGamma === null) {
+                    initialGamma = gamma;
+                    addLog(`Initial gamma (left-right tilt) set: ${Math.round(gamma * 10) / 10}°`);
                 }
                 
                 // Calculate relative rotation from initial position
-                let relativeOrientation = alpha - initialAlpha;
+                // Gamma is -90 to +90, where positive is left tilt
+                let relativeOrientation = gamma - initialGamma;
                 
-                // Normalize to -180 to 180 range
-                if (relativeOrientation > 180) {
-                    relativeOrientation -= 360;
-                } else if (relativeOrientation < -180) {
-                    relativeOrientation += 360;
-                }
-                
-                // Convert to 0-360 range where left rotation is positive
-                // We negate because compass increases clockwise, but we want left to be positive
-                relativeOrientation = -relativeOrientation;
-                
-                // Normalize to 0-360 range
+                // Convert to 0-360 range
+                // Since gamma is already positive when tilting left, we just need to normalize
                 if (relativeOrientation < 0) {
                     relativeOrientation += 360;
                 }
@@ -306,7 +297,7 @@
                 // Throttle logs to once per second
                 const now = Date.now();
                 if (now - lastLogTime >= 1000) {
-                    addLog(`Relative: ${roundedOrientation}° | Raw Alpha: ${Math.round(alpha * 10) / 10}° | Beta: ${Math.round(beta * 10) / 10}° | Gamma: ${Math.round(gamma * 10) / 10}°`);
+                    addLog(`Board Rotation: ${roundedOrientation}° | Raw Gamma: ${Math.round(gamma * 10) / 10}° | Beta: ${Math.round(beta * 10) / 10}° | Alpha: ${Math.round(alpha * 10) / 10}°`);
                     lastLogTime = now;
                 }
             } else {
