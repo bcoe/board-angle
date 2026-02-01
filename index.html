@@ -112,24 +112,14 @@
             const gamma = event.gamma; // -90 to 90: rotation around y-axis (left-to-right tilt)
 
             if (beta !== null && gamma !== null) {
-                // Calculate the rotation angle when phone is held upright
-                // When phone is upright in portrait facing you: beta ≈ 90°, gamma ≈ 0° → angle = 0°
-                // When rotated left to landscape: gamma becomes negative → angle = 90°
+                // Basic Azimuth Calculation Formula: α = atan2(y, x) × (180/π)
+                // Using device orientation values as if they were magnetometer readings
+                // When phone is upright facing you: beta ≈ 90°, gamma ≈ 0° → angle = 0°
+                // When rotated left to landscape: beta ≈ 0°, gamma ≈ -90° → angle = 90°
 
-                // Convert to radians
-                const betaRad = beta * Math.PI / 180;
-                const gammaRad = gamma * Math.PI / 180;
-
-                // For rotation around gravity vector, we need to properly account for
-                // the projection of the device orientation onto the horizontal plane.
-                // Using the rotation matrix formulation from the W3C spec:
-                // The angle is arctan of the ratio of the horizontal components.
-
-                // Calculate using arctan instead of atan2 to avoid compression
-                let angleDeg = Math.atan(Math.tan(gammaRad) / Math.sin(betaRad)) * (180 / Math.PI);
-
-                // Invert sign (gamma negative = positive rotation to the left)
-                angleDeg = -angleDeg;
+                // Apply atan2 formula directly
+                // Note: -gamma because rotating left makes gamma negative, but we want positive angle
+                let angleDeg = Math.atan2(-gamma, beta) * (180 / Math.PI);
 
                 // Normalize to 0-360 range
                 if (angleDeg < 0) {
