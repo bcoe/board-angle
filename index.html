@@ -106,35 +106,30 @@
         }
 
         function handleOrientation(event) {
-            // Get orientation values
-            const alpha = event.alpha; // 0-360: rotation around z-axis (compass)
-            const beta = event.beta;   // -180 to 180: rotation around x-axis (front-to-back tilt)
-            const gamma = event.gamma; // -90 to 90: rotation around y-axis (left-to-right tilt)
-
-            const betaRad = beta * (Math.PI / 180);
-            const gammaRad = gamma * (Math.PI / 180);
+            const { alpha, beta, gamma } = event;
 
             if (beta !== null && gamma !== null) {
-                // Basic Azimuth Calculation Formula: α = atan2(y, x) × (180/π)
-                // Using device orientation values as if they were magnetometer readings
-                // When phone is upright facing you: beta ≈ 90°, gamma ≈ 0° → angle = 0°
-                // When rotated left to landscape: beta ≈ 0°, gamma ≈ -90° → angle = 90°
+                // Convert degrees to radians
+                const a = alpha * (Math.PI / 180);
+                const b = beta * (Math.PI / 180);
+                const g = gamma * (Math.PI / 180);
 
-                // Apply atan2 formula directly
-                // Note: -gamma because rotating left makes gamma negative, but we want positive angle
-                const angleRad = Math.atan2(gammaRad, -betaRad);
-                const angleDeg = angleRad * (180 / Math.PI);
+                // Calculate the components of the "up" vector of the phone
+                // This is essentially the 2nd column of the rotation matrix
+                const x = Math.cos(a) * Math.sin(g) - Math.sin(a) * Math.sin(b) * Math.cos(g);
+                const y = Math.sin(a) * Math.sin(g) + Math.cos(a) * Math.sin(b) * Math.cos(g);
                 
-                // Normalize to 0-360 range
-                if (angleDeg < 0) {
-                    angleDeg += 360;
-                }
+                // Calculate the stable angle
+                let angle = Math.atan2(x, y) * (180 / Math.PI);
+
+                // Normalize to 0-360 starting from Portrait (0)
+                angle = (angle + 360) % 360;
 
                 // Update display
-                angleDisplay.textContent = angleDeg.toFixed(1) + '°';
+                angleDisplay.textContent = angle.toFixed(1) + '°';
 
                 // Debug info
-                statusDisplay.textContent = `γ: ${gamma.toFixed(1)}° β: ${beta.toFixed(1)}° α: ${alpha ? alpha.toFixed(1) : 'N/A'}°`;
+                // statusDisplay.textContent = `γ: ${gamma.toFixed(1)}° β: ${beta.toFixed(1)}° α: ${alpha ? alpha.toFixed(1) : 'N/A'}°`;
             } else {
                 angleDisplay.textContent = '--';
                 statusDisplay.textContent = 'Waiting for sensor data...';
