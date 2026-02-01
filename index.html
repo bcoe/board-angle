@@ -75,6 +75,9 @@
         const statusDisplay = document.getElementById('status');
         const enableButton = document.getElementById('enableButton');
 
+        let initialGamma = null;
+        let initialBeta = null;
+
         // Check if we need permission (iOS 13+)
         async function requestPermission() {
             if (typeof DeviceOrientationEvent !== 'undefined' &&
@@ -98,50 +101,40 @@
             enableButton.style.display = 'none';
             statusDisplay.textContent = 'Rotate your device...';
 
-            // Use screen orientation API if available
-            if (window.screen && window.screen.orientation) {
-                updateAngle(window.screen.orientation.angle);
-
-                window.screen.orientation.addEventListener('change', () => {
-                    updateAngle(window.screen.orientation.angle);
-                });
-            } else {
-                // Fallback to deprecated window.orientation
-                updateAngle(window.orientation || 0);
-
-                window.addEventListener('orientationchange', () => {
-                    updateAngle(window.orientation || 0);
-                });
-            }
-
-            // Also listen to device orientation for more granular updates
+            // Listen to device orientation for continuous updates
             window.addEventListener('deviceorientation', handleOrientation);
         }
 
         function handleOrientation(event) {
-            // Get the screen orientation angle
-            let screenAngle = 0;
-            if (window.screen && window.screen.orientation) {
-                screenAngle = window.screen.orientation.angle;
-            } else if (typeof window.orientation !== 'undefined') {
-                screenAngle = window.orientation;
+            // Get orientation values
+            const alpha = event.alpha; // 0-360: rotation around z-axis (compass)
+            const beta = event.beta;   // -180 to 180: rotation around x-axis (front-to-back tilt)
+            const gamma = event.gamma; // -90 to 90: rotation around y-axis (left-to-right tilt)
+
+            // Calculate the rotation angle
+            // When phone is upright in portrait: beta ≈ 0-90, gamma ≈ 0
+            // When rotated left to landscape: gamma increases toward 90
+
+            let angle;
+
+            // Use gamma directly for the rotation angle when phone is roughly upright
+            // Gamma ranges from -90 (tilted right) to 90 (tilted left)
+            // We want: 0° = portrait (gamma ≈ 0), 90° = landscape left (gamma ≈ 90)
+
+            if (beta !== null && gamma !== null) {
+                // When beta is positive (phone tilted toward you), use gamma directly
+                // Clamp gamma to 0-90 range for the display
+                angle = Math.max(0, Math.min(90, gamma));
+
+                // Update display
+                angleDisplay.textContent = angle.toFixed(1) + '°';
+
+                // Debug info
+                statusDisplay.textContent = `γ: ${gamma.toFixed(1)}° β: ${beta.toFixed(1)}° α: ${alpha ? alpha.toFixed(1) : 'N/A'}°`;
+            } else {
+                angleDisplay.textContent = '--';
+                statusDisplay.textContent = 'Waiting for sensor data...';
             }
-
-            updateAngle(screenAngle);
-        }
-
-        function updateAngle(rawAngle) {
-            // Normalize the angle: portrait = 0, left landscape = 90
-            // Screen orientation API gives: 0 = portrait, 90 = left landscape, 270 = right landscape, 180 = upside down
-            let normalizedAngle = rawAngle;
-
-            // If negative (some browsers), convert to positive
-            if (normalizedAngle < 0) {
-                normalizedAngle = 360 + normalizedAngle;
-            }
-
-            // Display the angle
-            angleDisplay.textContent = Math.round(normalizedAngle) + '°';
         }
 
         // Initialize
