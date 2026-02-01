@@ -2,13 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="screen-orientation" content="portrait">
+    <meta name="x5-orientation" content="portrait">
     <title>Phone Orientation</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        @media screen and (orientation: landscape) {
+            html {
+                transform: rotate(-90deg);
+                transform-origin: left top;
+                width: 100vh;
+                height: 100vw;
+                overflow-x: hidden;
+                position: absolute;
+                top: 100%;
+                left: 0;
+            }
         }
 
         body {
@@ -38,7 +55,19 @@
             margin: 20px 0;
             text-shadow: 0 2px 4px rgba(0,0,0,0.2);
             color: #2d2d2d;
-            transition: opacity 0.3s ease-in-out;
+            transition: opacity 0.3s ease-in-out, font-size 0.3s ease-in-out;
+        }
+
+        #angle.info-message {
+            font-size: 32px;
+            font-weight: 500;
+            padding: 20px 30px;
+            border: 3px solid #8b7355;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.3);
+            text-shadow: none;
+            max-width: 400px;
+            line-height: 1.4;
         }
 
         #label {
@@ -121,6 +150,13 @@
             enableButton.style.display = 'none';
             statusDisplay.textContent = 'Rotate your device...';
 
+            // Lock screen orientation to portrait (Android)
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('portrait').catch((err) => {
+                    console.log('Orientation lock not supported:', err);
+                });
+            }
+
             // Check if Accelerometer API is available
             if ('Accelerometer' in window) {
                 try {
@@ -185,10 +221,10 @@
                     setTimeout(() => {
                         if (roundedAngle > 120) {
                             angleDisplay.textContent = "This isn't for slab climbing.";
-                            angleDisplay.style.fontSize = '48px';
+                            angleDisplay.classList.add('info-message');
                         } else {
                             angleDisplay.textContent = roundedAngle + '°';
-                            angleDisplay.style.fontSize = '120px';
+                            angleDisplay.classList.remove('info-message');
                         }
                         angleDisplay.style.opacity = '1';
                     }, 150);
