@@ -114,26 +114,19 @@
             if (beta !== null && gamma !== null) {
                 // Calculate the rotation angle using atan2
                 // When phone is upright in portrait facing you: beta ≈ 90°, gamma ≈ 0° → angle = 0°
-                // When rotated left to landscape: beta ≈ 0°, gamma ≈ 90° → angle = 90°
+                // When rotated left to landscape: gamma becomes negative → angle = 90°
 
-                // Use atan2(beta, gamma) and subtract from 90° to get the correct orientation
-                let angleRad = Math.atan2(beta, gamma);
+                // Negate gamma to invert the direction (left rotation = positive angle increase)
+                let angleRad = Math.atan2(-gamma, beta);
                 let angleDeg = angleRad * (180 / Math.PI);
 
-                // Calculate final angle: 90° - atan2(beta, gamma)
-                // This gives us 0° in portrait and 90° when rotated left to landscape
-                let finalAngle = 90 - angleDeg;
-
                 // Normalize to 0-360 range
-                if (finalAngle < 0) {
-                    finalAngle += 360;
-                }
-                if (finalAngle >= 360) {
-                    finalAngle -= 360;
+                if (angleDeg < 0) {
+                    angleDeg += 360;
                 }
 
                 // Update display
-                angleDisplay.textContent = finalAngle.toFixed(1) + '°';
+                angleDisplay.textContent = angleDeg.toFixed(1) + '°';
 
                 // Debug info
                 statusDisplay.textContent = `γ: ${gamma.toFixed(1)}° β: ${beta.toFixed(1)}° α: ${alpha ? alpha.toFixed(1) : 'N/A'}°`;
