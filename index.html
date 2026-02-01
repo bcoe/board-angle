@@ -75,25 +75,25 @@
         const statusDisplay = document.getElementById('status');
         const enableButton = document.getElementById('enableButton');
 
-        let initialGamma = null;
-        let initialBeta = null;
+        let accelerometer = null;
 
         // Check if we need permission (iOS 13+)
         async function requestPermission() {
-            if (typeof DeviceOrientationEvent !== 'undefined' &&
-                typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const permission = await DeviceOrientationEvent.requestPermission();
+            try {
+                // Request motion sensor permission on iOS
+                if (typeof DeviceMotionEvent !== 'undefined' &&
+                    typeof DeviceMotionEvent.requestPermission === 'function') {
+                    const permission = await DeviceMotionEvent.requestPermission();
                     if (permission === 'granted') {
                         startTracking();
                     } else {
-                        statusDisplay.textContent = 'Permission denied. Please allow orientation access.';
+                        statusDisplay.textContent = 'Permission denied. Please allow motion sensor access.';
                     }
-                } catch (error) {
-                    statusDisplay.textContent = 'Error requesting permission: ' + error.message;
+                } else {
+                    startTracking();
                 }
-            } else {
-                startTracking();
+            } catch (error) {
+                statusDisplay.textContent = 'Error requesting permission: ' + error.message;
             }
         }
 
@@ -101,34 +101,55 @@
             enableButton.style.display = 'none';
             statusDisplay.textContent = 'Rotate your device...';
 
-            // Listen to device orientation for continuous updates
-            window.addEventListener('deviceorientation', handleOrientation);
+            // Check if Accelerometer API is available
+            if ('Accelerometer' in window) {
+                try {
+                    // Create accelerometer with 60Hz frequency
+                    accelerometer = new Accelerometer({ frequency: 60 });
+
+                    accelerometer.addEventListener('reading', handleAccelerometer);
+                    accelerometer.addEventListener('error', (event) => {
+                        statusDisplay.textContent = 'Accelerometer error: ' + event.error.message;
+                    });
+
+                    accelerometer.start();
+                } catch (error) {
+                    statusDisplay.textContent = 'Failed to start accelerometer: ' + error.message;
+                }
+            } else {
+                statusDisplay.textContent = 'Accelerometer API not supported on this device.';
+            }
         }
 
-        function handleOrientation(event) {
-            // 1. Get raw values.
-            const { alpha, beta, gamma } = event;
+        function handleAccelerometer() {
+            // Get raw acceleration values (m/s²)
+            const x = accelerometer.x;
+            const y = accelerometer.y;
+            const z = accelerometer.z;
 
-            if (beta !== null && gamma !== null) {
-                // Convert degrees to radians for math functions
-                const bRad = beta * (Math.PI / 180);
-                const gRad = gamma * (Math.PI / 180);
+            if (x !== null && y !== null && z !== null) {
+                // The accelerometer measures gravity when stationary
+                // x: left-right (positive = right)
+                // y: top-bottom (positive = top/up)
+                // z: front-back (positive = out of screen)
 
-                // Calculate the angle using the projection of the gravity vector
-                // when the phone is held roughly vertical facing the user.
-                // We use -Math.sin(gRad) and Math.sin(bRad) to map the 2D plane.
-                let angle = Math.atan2(-Math.sin(gRad), Math.sin(bRad)) * (180 / Math.PI);
+                // When phone is upright facing you: x ≈ 0, y ≈ -9.8, z ≈ 0
+                // When rotated left to landscape: x ≈ 9.8, y ≈ 0, z ≈ 0
 
-                // Normalization:
-                // This makes Portrait = 0 degrees
-                // Rotating CCW increases the angle toward 90 (Landscape)
+                // Basic Azimuth Calculation: α = atan2(y, x) × (180/π)
+                // Using the projection of gravity on the x-y plane
+                // This maps the same way as -sin(gamma) and sin(beta) from deviceorientation
+                let angle = Math.atan2(-x, y) * (180 / Math.PI);
+
+                // Normalization to 0-360 range
+                // Portrait = 0 degrees, rotating left increases toward 90 (Landscape)
                 angle = (angle + 360) % 360;
 
                 // Update display
                 angleDisplay.textContent = angle.toFixed(1) + '°';
 
                 // Debug info
-                // statusDisplay.textContent = `γ: ${gamma.toFixed(1)}° β: ${beta.toFixed(1)}° α: ${alpha ? alpha.toFixed(1) : 'N/A'}°`;
+                statusDisplay.textContent = `x: ${x.toFixed(2)} y: ${y.toFixed(2)} z: ${z.toFixed(2)}`;
             } else {
                 angleDisplay.textContent = '--';
                 statusDisplay.textContent = 'Waiting for sensor data...';
@@ -136,15 +157,18 @@
         }
 
         // Initialize
-        if (typeof DeviceOrientationEvent !== 'undefined' &&
-            typeof DeviceOrientationEvent.requestPermission === 'function') {
+        if (typeof DeviceMotionEvent !== 'undefined' &&
+            typeof DeviceMotionEvent.requestPermission === 'function') {
             // iOS 13+ requires user interaction
             enableButton.style.display = 'block';
-            statusDisplay.textContent = 'Tap the button to enable orientation tracking';
+            statusDisplay.textContent = 'Tap the button to enable motion sensors';
             enableButton.addEventListener('click', requestPermission);
-        } else {
-            // Other browsers can start immediately
+        } else if ('Accelerometer' in window) {
+            // Other browsers with Accelerometer API can start immediately
             startTracking();
+        } else {
+            // Accelerometer API not supported
+            statusDisplay.textContent = 'Accelerometer API not supported on this device.';
         }
     </script>
 </body>
