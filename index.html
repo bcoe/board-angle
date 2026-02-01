@@ -129,11 +129,13 @@
         <div class="orientation-display" id="orientationValue">--°</div>
         
         <div class="info">
-            Hold your phone with the screen facing you.<br>
-            Rotate left/right to see the Z-axis orientation.
+            Hold your phone upright with the screen facing you, then click the button below.<br>
+            Your current position will be set as 0°.<br>
+            Rotate left to increase the degrees (90° left = 90°).
         </div>
         
         <button id="startButton">Enable Orientation Tracking</button>
+        <button id="resetButton" style="display: none;">Reset Zero Position</button>
         
         <div class="status" id="status"></div>
         <div class="error" id="error" style="display: none;"></div>
@@ -148,6 +150,7 @@
     <script>
         const orientationDisplay = document.getElementById('orientationValue');
         const startButton = document.getElementById('startButton');
+        const resetButton = document.getElementById('resetButton');
         const statusDiv = document.getElementById('status');
         const errorDiv = document.getElementById('error');
         const logContainer = document.getElementById('logContainer');
@@ -157,6 +160,7 @@
         let isTracking = false;
         let logCount = 0;
         const maxLogs = 50; // Keep last 50 logs
+        let initialAlpha = null; // Store the initial orientation
         
         function showError(message) {
             errorDiv.textContent = message;
@@ -193,6 +197,11 @@
             addLog('Logs cleared');
         }
         
+        function resetZeroPosition() {
+            initialAlpha = null;
+            addLog('Zero position will be reset on next reading');
+        }
+        
         function handleOrientation(event) {
             // Alpha is the compass direction (Z-axis rotation)
             // 0 degrees = North, increases clockwise
@@ -202,12 +211,38 @@
             const gamma = event.gamma; // Y-axis (left-to-right tilt)
             
             if (alpha !== null) {
+                // Set initial orientation on first reading
+                if (initialAlpha === null) {
+                    initialAlpha = alpha;
+                    addLog(`Initial compass heading set: ${Math.round(alpha * 10) / 10}°`);
+                }
+                
+                // Calculate relative rotation from initial position
+                // Rotating left (counter-clockwise) should increase the value
+                let relativeOrientation = alpha - initialAlpha;
+                
+                // Normalize to -180 to 180 range
+                if (relativeOrientation > 180) {
+                    relativeOrientation -= 360;
+                } else if (relativeOrientation < -180) {
+                    relativeOrientation += 360;
+                }
+                
+                // Convert to 0-360 range where left rotation is positive
+                // We negate because compass increases clockwise, but we want left to be positive
+                relativeOrientation = -relativeOrientation;
+                
+                // Normalize to 0-360 range
+                if (relativeOrientation < 0) {
+                    relativeOrientation += 360;
+                }
+                
                 // Round to 1 decimal place
-                const roundedAlpha = Math.round(alpha * 10) / 10;
-                orientationDisplay.textContent = `${roundedAlpha}°`;
+                const roundedOrientation = Math.round(relativeOrientation * 10) / 10;
+                orientationDisplay.textContent = `${roundedOrientation}°`;
                 
                 // Log Z-axis orientation to the display
-                addLog(`Z-axis orientation: ${roundedAlpha}°`);
+                addLog(`Z-axis orientation: ${roundedOrientation}°`);
             } else {
                 orientationDisplay.textContent = 'N/A';
                 addLog('Orientation data not available');
@@ -256,16 +291,20 @@
             startButton.disabled = true;
             startButton.style.opacity = '0.6';
             
-            // Show the log container
+            // Show the reset button and log container
+            resetButton.style.display = 'inline-block';
             logContainer.style.display = 'block';
             
             showStatus('Tracking orientation...');
             addLog('Orientation tracking started');
-            addLog('Hold your phone with screen facing you and rotate left/right');
+            addLog('Your current position will be set as 0° on first reading');
         }
         
         // Event listener for the start button
         startButton.addEventListener('click', requestPermissionAndStart);
+        
+        // Event listener for the reset button
+        resetButton.addEventListener('click', resetZeroPosition);
         
         // Event listener for the clear button
         clearButton.addEventListener('click', clearLogs);
