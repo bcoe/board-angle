@@ -129,14 +129,14 @@
         // Check if we need permission (iOS 13+)
         async function requestPermission() {
             try {
-                // Request motion sensor permission on iOS
-                if (typeof DeviceMotionEvent !== 'undefined' &&
-                    typeof DeviceMotionEvent.requestPermission === 'function') {
-                    const permission = await DeviceMotionEvent.requestPermission();
+                // Request orientation sensor permission on iOS
+                if (typeof DeviceOrientationEvent !== 'undefined' &&
+                    typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    const permission = await DeviceOrientationEvent.requestPermission();
                     if (permission === 'granted') {
                         startTracking();
                     } else {
-                        statusDisplay.textContent = 'Permission denied. Please allow motion sensor access.';
+                        statusDisplay.textContent = 'Permission denied. Please allow orientation access.';
                     }
                 } else {
                     startTracking();
@@ -157,7 +157,7 @@
                 });
             }
 
-            // Check if Accelerometer API is available
+            // Check if Accelerometer API is available (Android)
             if ('Accelerometer' in window) {
                 try {
                     // Create accelerometer with 60Hz frequency
@@ -173,22 +173,56 @@
                     statusDisplay.textContent = 'Failed to start accelerometer: ' + error.message;
                 }
             } else {
-                statusDisplay.textContent = 'Accelerometer API not supported on this device.';
+                // iOS fallback - use deviceorientation API
+                window.addEventListener('deviceorientation', handleDeviceOrientation);
             }
         }
 
+        function handleDeviceOrientation(event) {
+            // iOS shim - convert deviceorientation to accelerometer-like values
+            const beta = event.beta;   // -180 to 180: front-to-back tilt
+            const gamma = event.gamma; // -90 to 90: left-to-right tilt
+
+            if (beta === null || gamma === null) {
+                return;
+            }
+
+            // Convert angles to radians
+            const betaRad = beta * (Math.PI / 180);
+            const gammaRad = gamma * (Math.PI / 180);
+
+            // Simulate accelerometer values (gravity = 9.8 m/s²)
+            // When portrait (beta ≈ 90°, gamma ≈ 0°): x ≈ 0, y ≈ -9.8
+            // When landscape left (beta ≈ 0-90°, gamma ≈ -90°): x ≈ 9.8, y ≈ 0
+            const x = -Math.sin(gammaRad) * 9.8;
+            const y = -Math.sin(betaRad) * 9.8;
+            const z = -Math.cos(betaRad) * Math.cos(gammaRad) * 9.8;
+
+            // Call the common processing function
+            processAccelerometerData(x, y, z);
+        }
+
         function handleAccelerometer() {
+            // Get raw acceleration values (m/s²)
+            const x = accelerometer.x;
+            const y = accelerometer.y;
+            const z = accelerometer.z;
+
+            if (x === null || y === null || z === null) {
+                return;
+            }
+
+            // Call the common processing function
+            processAccelerometerData(x, y, z);
+        }
+
+        function processAccelerometerData(x, y, z) {
             // Throttle updates to once per second
             const currentTime = Date.now();
             if (currentTime - lastUpdateTime < UPDATE_INTERVAL) {
                 return;
             }
             lastUpdateTime = currentTime;
-
-            // Get raw acceleration values (m/s²)
-            const x = accelerometer.x;
-            const y = accelerometer.y;
-            const z = accelerometer.z;
 
             if (x !== null && y !== null && z !== null) {
                 // The accelerometer measures gravity when stationary
@@ -239,18 +273,15 @@
         }
 
         // Initialize
-        if (typeof DeviceMotionEvent !== 'undefined' &&
-            typeof DeviceMotionEvent.requestPermission === 'function') {
+        if (typeof DeviceOrientationEvent !== 'undefined' &&
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
             // iOS 13+ requires user interaction
             enableButton.style.display = 'block';
-            statusDisplay.textContent = 'Tap the button to enable motion sensors';
+            statusDisplay.textContent = 'Tap the button to enable orientation tracking';
             enableButton.addEventListener('click', requestPermission);
-        } else if ('Accelerometer' in window) {
-            // Other browsers with Accelerometer API can start immediately
-            startTracking();
         } else {
-            // Accelerometer API not supported
-            statusDisplay.textContent = 'Accelerometer API not supported on this device.';
+            // Other browsers can start immediately
+            startTracking();
         }
     </script>
 </body>
