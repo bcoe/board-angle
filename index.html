@@ -112,12 +112,21 @@
             const gamma = event.gamma; // -90 to 90: rotation around y-axis (left-to-right tilt)
 
             if (beta !== null && gamma !== null) {
-                // Calculate the rotation angle using atan2
+                // Calculate the rotation angle around the gravity vector
                 // When phone is upright in portrait facing you: beta ≈ 90°, gamma ≈ 0° → angle = 0°
                 // When rotated left to landscape: gamma becomes negative → angle = 90°
 
-                // Negate gamma to invert the direction (left rotation = positive angle increase)
-                let angleRad = Math.atan2(-gamma, beta);
+                // Convert to radians
+                const betaRad = beta * Math.PI / 180;
+                const gammaRad = gamma * Math.PI / 180;
+
+                // Calculate screen normal vector components
+                // This properly accounts for the compound rotation
+                const nx = Math.sin(gammaRad);
+                const ny = Math.sin(betaRad) * Math.cos(gammaRad);
+
+                // Calculate rotation angle from the normal vector
+                let angleRad = Math.atan2(-nx, ny);
                 let angleDeg = angleRad * (180 / Math.PI);
 
                 // Normalize to 0-360 range
