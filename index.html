@@ -120,13 +120,17 @@
                 const betaRad = beta * Math.PI / 180;
                 const gammaRad = gamma * Math.PI / 180;
 
-                // Calculate screen normal vector components
-                // This properly accounts for the compound rotation
-                const nx = Math.sin(gammaRad);
-                const ny = Math.sin(betaRad) * Math.cos(gammaRad);
+                // Calculate the device's "up" direction (top of phone) after rotation
+                // The up vector starts as (0, 1, 0) in device coordinates
+                // After beta rotation around X-axis: (0, cos(beta), sin(beta))
+                // After gamma rotation around Y-axis: (sin(gamma)*sin(beta), cos(beta), cos(gamma)*sin(beta))
 
-                // Calculate rotation angle from the normal vector
-                let angleRad = Math.atan2(-nx, ny);
+                // We want the angle this vector makes in the horizontal plane
+                const ux = Math.sin(gammaRad) * Math.sin(betaRad);
+                const uy = Math.cos(betaRad);
+
+                // The rotation angle is the arctangent of these components
+                let angleRad = Math.atan2(-ux, uy);
                 let angleDeg = angleRad * (180 / Math.PI);
 
                 // Normalize to 0-360 range
