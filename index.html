@@ -179,26 +179,8 @@
         }
 
         function handleDeviceOrientation(event) {
-            // iOS shim - convert deviceorientation to accelerometer-like values
-            const beta = event.beta;   // -180 to 180: front-to-back tilt
-            const gamma = event.gamma; // -90 to 90: left-to-right tilt
-
-            if (beta === null || gamma === null) {
-                return;
-            }
-
-            // Convert angles to radians
-            const betaRad = beta * (Math.PI / 180);
-            const gammaRad = gamma * (Math.PI / 180);
-
-            // Simulate accelerometer values (gravity = 9.8 m/s²)
-            // When portrait (beta ≈ 90°, gamma ≈ 0°): x ≈ 0, y ≈ -9.8
-            // When landscape left (beta ≈ 0-90°, gamma ≈ -90°): x ≈ 9.8, y ≈ 0
-            const x = -Math.sin(gammaRad) * 9.8;
-            const y = -Math.sin(betaRad) * 9.8;
-            const z = -Math.cos(betaRad) * Math.cos(gammaRad) * 9.8;
-
-            // Call the common processing function
+            // This is the closest equivalent to a raw Accelerometer() reading
+            const { x, y, z } = event.accelerationIncludingGravity;
             processAccelerometerData(x, y, z);
         }
 
