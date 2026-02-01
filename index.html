@@ -111,6 +111,9 @@
             const beta = event.beta;   // -180 to 180: rotation around x-axis (front-to-back tilt)
             const gamma = event.gamma; // -90 to 90: rotation around y-axis (left-to-right tilt)
 
+            const betaRad = beta * (Math.PI / 180);
+            const gammaRad = gamma * (Math.PI / 180);
+
             if (beta !== null && gamma !== null) {
                 // Basic Azimuth Calculation Formula: α = atan2(y, x) × (180/π)
                 // Using device orientation values as if they were magnetometer readings
@@ -119,8 +122,9 @@
 
                 // Apply atan2 formula directly
                 // Note: -gamma because rotating left makes gamma negative, but we want positive angle
-                let angleDeg = Math.atan2(-gamma, beta) * (180 / Math.PI);
-
+                const angleRad = Math.atan2(gammaRad, -betaRad);
+                const angleDeg = angleRad * (180 / Math.PI);
+                
                 // Normalize to 0-360 range
                 if (angleDeg < 0) {
                     angleDeg += 360;
