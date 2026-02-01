@@ -282,13 +282,8 @@
                 
                 // Calculate relative rotation from initial position
                 // Gamma is -90 to +90, where positive is left tilt
+                // Simply subtract initial from current to get the rotation angle
                 let relativeOrientation = gamma - initialGamma;
-                
-                // Convert to 0-360 range
-                // Since gamma is already positive when tilting left, we just need to normalize
-                if (relativeOrientation < 0) {
-                    relativeOrientation += 360;
-                }
                 
                 // Round to 1 decimal place
                 const roundedOrientation = Math.round(relativeOrientation * 10) / 10;
