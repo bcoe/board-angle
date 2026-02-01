@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone Orientation Tracker</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        
+        h1 {
+            margin-top: 0;
+            font-size: 2rem;
+        }
+        
+        .orientation-display {
+            font-size: 4rem;
+            font-weight: bold;
+            margin: 30px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .info {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        
+        button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+        }
+        
+        button:active {
+            transform: scale(0.95);
+        }
+        
+        .error {
+            color: #ff6b6b;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .status {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .log-container {
+            margin-top: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            max-width: 100%;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .log-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .log-display {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 5px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+            line-height: 1.6;
+            color: #a8e6cf;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+        }
+        
+        .clear-button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Phone Orientation Tracker</h1>
+        
+        <div class="orientation-display" id="orientationValue">--°</div>
+        
+        <div class="info">
+            Hold your phone with the screen facing you.<br>
+            Rotate left/right to see the Z-axis orientation.
+        </div>
+        
+        <button id="startButton">Enable Orientation Tracking</button>
+        
+        <div class="status" id="status"></div>
+        <div class="error" id="error" style="display: none;"></div>
+        
+        <div class="log-container" id="logContainer" style="display: none;">
+            <div class="log-header">Z-Axis Orientation Log:</div>
+            <div class="log-display" id="logDisplay"></div>
+            <button class="clear-button" id="clearButton">Clear Logs</button>
+        </div>
+    </div>
+
+    <script>
+        const orientationDisplay = document.getElementById('orientationValue');
+        const startButton = document.getElementById('startButton');
+        const statusDiv = document.getElementById('status');
+        const errorDiv = document.getElementById('error');
+        const logContainer = document.getElementById('logContainer');
+        const logDisplay = document.getElementById('logDisplay');
+        const clearButton = document.getElementById('clearButton');
+        
+        let isTracking = false;
+        let logCount = 0;
+        const maxLogs = 50; // Keep last 50 logs
+        
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            console.error(message);
+        }
+        
+        function showStatus(message) {
+            statusDiv.textContent = message;
+            console.log(message);
+        }
+        
+        function addLog(message) {
+            logCount++;
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            logDisplay.insertBefore(logEntry, logDisplay.firstChild);
+            
+            // Keep only the last maxLogs entries
+            while (logDisplay.children.length > maxLogs) {
+                logDisplay.removeChild(logDisplay.lastChild);
+            }
+            
+            // Also log to console
+            console.log(message);
+        }
+        
+        function clearLogs() {
+            logDisplay.innerHTML = '';
+            logCount = 0;
+            addLog('Logs cleared');
+        }
+        
+        function handleOrientation(event) {
+            // Alpha is the compass direction (Z-axis rotation)
+            // 0 degrees = North, increases clockwise
+            // Range: 0 to 360 degrees
+            const alpha = event.alpha;
+            const beta = event.beta;   // X-axis (front-to-back tilt)
+            const gamma = event.gamma; // Y-axis (left-to-right tilt)
+            
+            if (alpha !== null) {
+                // Round to 1 decimal place
+                const roundedAlpha = Math.round(alpha * 10) / 10;
+                orientationDisplay.textContent = `${roundedAlpha}°`;
+                
+                // Log Z-axis orientation to the display
+                addLog(`Z-axis orientation: ${roundedAlpha}°`);
+            } else {
+                orientationDisplay.textContent = 'N/A';
+                addLog('Orientation data not available');
+            }
+        }
+        
+        async function requestPermissionAndStart() {
+            try {
+                // Check if DeviceOrientationEvent is supported
+                if (!window.DeviceOrientationEvent) {
+                    showError('DeviceOrientation API is not supported on this device/browser');
+                    return;
+                }
+                
+                // For iOS 13+ devices, we need to request permission
+                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    showStatus('Requesting permission...');
+                    
+                    try {
+                        const permission = await DeviceOrientationEvent.requestPermission();
+                        
+                        if (permission === 'granted') {
+                            startTracking();
+                        } else {
+                            showError('Permission denied. Please allow orientation access in your browser settings.');
+                        }
+                    } catch (error) {
+                        showError(`Permission request failed: ${error.message}`);
+                    }
+                } else {
+                    // Non-iOS 13+ devices don't need permission
+                    startTracking();
+                }
+            } catch (error) {
+                showError(`Error: ${error.message}`);
+            }
+        }
+        
+        function startTracking() {
+            if (isTracking) return;
+            
+            window.addEventListener('deviceorientation', handleOrientation, true);
+            isTracking = true;
+            
+            startButton.textContent = 'Tracking Active ✓';
+            startButton.disabled = true;
+            startButton.style.opacity = '0.6';
+            
+            // Show the log container
+            logContainer.style.display = 'block';
+            
+            showStatus('Tracking orientation...');
+            addLog('Orientation tracking started');
+            addLog('Hold your phone with screen facing you and rotate left/right');
+        }
+        
+        // Event listener for the start button
+        startButton.addEventListener('click', requestPermissionAndStart);
+        
+        // Event listener for the clear button
+        clearButton.addEventListener('click', clearLogs);
+        
+        // Initial check
+        if (window.DeviceOrientationEvent) {
+            showStatus('Click the button to start tracking');
+        } else {
+            showError('DeviceOrientation API is not supported on this device/browser');
+            startButton.disabled = true;
+        }
+    </script>
+</body>
+</html>
