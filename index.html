@@ -38,6 +38,7 @@
             margin: 20px 0;
             text-shadow: 0 2px 4px rgba(0,0,0,0.2);
             color: #2d2d2d;
+            transition: opacity 0.3s ease-in-out;
         }
 
         #label {
@@ -80,7 +81,7 @@
 </head>
 <body>
     <img id="boardImage" src="board.webp" alt="Climbing Board">
-    <div id="label">Board Angle</div>
+    <div id="label">Board Angle Calculator Thingy™ </div>
     <div id="angle">--</div>
     <div id="status">Loading...</div>
     <button id="enableButton" style="display: none;">Enable Orientation</button>
@@ -91,6 +92,10 @@
         const enableButton = document.getElementById('enableButton');
 
         let accelerometer = null;
+        let lastUpdateTime = 0;
+        let lastDisplayedAngle = null;
+        const UPDATE_INTERVAL = 1000; // Update once per second
+        const MIN_ANGLE_CHANGE = 0.7; // Minimum change in degrees to trigger update
 
         // Check if we need permission (iOS 13+)
         async function requestPermission() {
@@ -137,6 +142,13 @@
         }
 
         function handleAccelerometer() {
+            // Throttle updates to once per second
+            const currentTime = Date.now();
+            if (currentTime - lastUpdateTime < UPDATE_INTERVAL) {
+                return;
+            }
+            lastUpdateTime = currentTime;
+
             // Get raw acceleration values (m/s²)
             const x = accelerometer.x;
             const y = accelerometer.y;
@@ -161,8 +173,20 @@
                 // Portrait = 0 degrees, rotating left increases toward 90 (Landscape)
                 angle = (angle + 360) % 360;
 
-                // Update display
-                angleDisplay.textContent = angle.toFixed(1) + '°';
+                // Round to nearest whole degree
+                const roundedAngle = Math.round(angle);
+
+                // Only update if angle has changed by more than MIN_ANGLE_CHANGE
+                if (lastDisplayedAngle === null || Math.abs(roundedAngle - lastDisplayedAngle) > MIN_ANGLE_CHANGE) {
+                    lastDisplayedAngle = roundedAngle;
+
+                    // Update display with subtle fade effect
+                    angleDisplay.style.opacity = '0.7';
+                    setTimeout(() => {
+                        angleDisplay.textContent = roundedAngle + '°';
+                        angleDisplay.style.opacity = '1';
+                    }, 150);
+                }
 
                 // Debug info
                 statusDisplay.textContent = `x: ${x.toFixed(2)} y: ${y.toFixed(2)} z: ${z.toFixed(2)}`;
