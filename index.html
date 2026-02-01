@@ -18,22 +18,34 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, #f5e6d3 0%, #d4b896 100%);
+            color: #3d3d3d;
             padding: 20px;
+        }
+
+        #boardImage {
+            max-width: 400px;
+            width: 90%;
+            height: auto;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
         }
 
         #angle {
             font-size: 120px;
             font-weight: bold;
             margin: 20px 0;
-            text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            color: #2d2d2d;
         }
 
         #label {
             font-size: 24px;
-            opacity: 0.9;
-            margin-bottom: 40px;
+            opacity: 0.85;
+            margin-bottom: 20px;
+            color: #4a4a4a;
+            font-weight: 500;
         }
 
         #status {
@@ -41,13 +53,14 @@
             opacity: 0.7;
             text-align: center;
             max-width: 400px;
+            color: #5a5a5a;
         }
 
         #enableButton {
             padding: 15px 30px;
             font-size: 18px;
-            background: white;
-            color: #667eea;
+            background: #8b7355;
+            color: white;
             border: none;
             border-radius: 8px;
             cursor: pointer;
@@ -57,6 +70,7 @@
 
         #enableButton:hover {
             transform: scale(1.05);
+            background: #a08060;
         }
 
         #enableButton:active {
@@ -65,7 +79,8 @@
     </style>
 </head>
 <body>
-    <div id="label">Phone Orientation</div>
+    <img id="boardImage" src="board.webp" alt="Climbing Board">
+    <div id="label">Board Angle</div>
     <div id="angle">--</div>
     <div id="status">Loading...</div>
     <button id="enableButton" style="display: none;">Enable Orientation</button>
