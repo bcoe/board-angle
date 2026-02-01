@@ -111,23 +111,22 @@
             const beta = event.beta;   // -180 to 180: rotation around x-axis (front-to-back tilt)
             const gamma = event.gamma; // -90 to 90: rotation around y-axis (left-to-right tilt)
 
-            // Calculate the rotation angle
-            // When phone is upright in portrait: beta ≈ 0-90, gamma ≈ 0
-            // When rotated left to landscape: gamma increases toward 90
-
-            let angle;
-
-            // Use gamma directly for the rotation angle when phone is roughly upright
-            // Gamma ranges from -90 (tilted right) to 90 (tilted left)
-            // We want: 0° = portrait (gamma ≈ 0), 90° = landscape left (gamma ≈ 90)
-
             if (beta !== null && gamma !== null) {
-                // When beta is positive (phone tilted toward you), use gamma directly
-                // Clamp gamma to 0-90 range for the display
-                angle = Math.max(0, Math.min(90, gamma));
+                // Calculate the rotation angle using atan2
+                // When phone is upright in portrait facing you: beta ≈ 90°, gamma ≈ 0° → angle = 0°
+                // When rotated left to landscape: beta ≈ 0°, gamma ≈ 90° → angle = 90°
+                // atan2(gamma, beta) gives us the angle in the beta-gamma plane
+
+                let angleRad = Math.atan2(gamma, beta);
+                let angleDeg = angleRad * (180 / Math.PI);
+
+                // Normalize to 0-360 range
+                if (angleDeg < 0) {
+                    angleDeg += 360;
+                }
 
                 // Update display
-                angleDisplay.textContent = angle.toFixed(1) + '°';
+                angleDisplay.textContent = angleDeg.toFixed(1) + '°';
 
                 // Debug info
                 statusDisplay.textContent = `γ: ${gamma.toFixed(1)}° β: ${beta.toFixed(1)}° α: ${alpha ? alpha.toFixed(1) : 'N/A'}°`;
