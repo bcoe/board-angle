@@ -120,9 +120,13 @@
                 const betaRad = beta * Math.PI / 180;
                 const gammaRad = gamma * Math.PI / 180;
 
-                // Use arctangent formula that accounts for both axes
-                // This calculates the rotation in the gamma-beta plane, then adjusts it
-                let angleDeg = Math.atan2(Math.tan(gammaRad), Math.sin(betaRad)) * (180 / Math.PI);
+                // For rotation around gravity vector, we need to properly account for
+                // the projection of the device orientation onto the horizontal plane.
+                // Using the rotation matrix formulation from the W3C spec:
+                // The angle is arctan of the ratio of the horizontal components.
+
+                // Calculate using arctan instead of atan2 to avoid compression
+                let angleDeg = Math.atan(Math.tan(gammaRad) / Math.sin(betaRad)) * (180 / Math.PI);
 
                 // Invert sign (gamma negative = positive rotation to the left)
                 angleDeg = -angleDeg;
