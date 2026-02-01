@@ -112,7 +112,7 @@
             const gamma = event.gamma; // -90 to 90: rotation around y-axis (left-to-right tilt)
 
             if (beta !== null && gamma !== null) {
-                // Calculate the rotation angle around the gravity vector
+                // Calculate the rotation angle when phone is held upright
                 // When phone is upright in portrait facing you: beta ≈ 90°, gamma ≈ 0° → angle = 0°
                 // When rotated left to landscape: gamma becomes negative → angle = 90°
 
@@ -120,18 +120,12 @@
                 const betaRad = beta * Math.PI / 180;
                 const gammaRad = gamma * Math.PI / 180;
 
-                // Calculate the device's "up" direction (top of phone) after rotation
-                // The up vector starts as (0, 1, 0) in device coordinates
-                // After beta rotation around X-axis: (0, cos(beta), sin(beta))
-                // After gamma rotation around Y-axis: (sin(gamma)*sin(beta), cos(beta), cos(gamma)*sin(beta))
+                // Use arctangent formula that accounts for both axes
+                // This calculates the rotation in the gamma-beta plane, then adjusts it
+                let angleDeg = Math.atan2(Math.tan(gammaRad), Math.sin(betaRad)) * (180 / Math.PI);
 
-                // We want the angle this vector makes in the horizontal plane
-                const ux = Math.sin(gammaRad) * Math.sin(betaRad);
-                const uy = Math.cos(betaRad);
-
-                // The rotation angle is the arctangent of these components
-                let angleRad = Math.atan2(-ux, uy);
-                let angleDeg = angleRad * (180 / Math.PI);
+                // Invert sign (gamma negative = positive rotation to the left)
+                angleDeg = -angleDeg;
 
                 // Normalize to 0-360 range
                 if (angleDeg < 0) {
