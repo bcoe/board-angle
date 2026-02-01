@@ -138,8 +138,9 @@
 
                 // Basic Azimuth Calculation: α = atan2(y, x) × (180/π)
                 // Using the projection of gravity on the x-y plane
-                // This maps the same way as -sin(gamma) and sin(beta) from deviceorientation
-                let angle = Math.atan2(-x, y) * (180 / Math.PI);
+                // Portrait (facing you): x ≈ 0, y ≈ -9.8 → 0°
+                // Rotating CCW to landscape: x increases, y → 0 → 90°
+                let angle = Math.atan2(x, y) * (180 / Math.PI);
 
                 // Normalization to 0-360 range
                 // Portrait = 0 degrees, rotating left increases toward 90 (Landscape)
