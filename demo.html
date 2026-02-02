@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Board Angle App Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+        }
+
+        .demo-container {
+            text-align: center;
+        }
+
+        .demo-title {
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 40px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .phone {
+            width: 300px;
+            height: 600px;
+            background: #1a1a1a;
+            border-radius: 40px;
+            padding: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            position: relative;
+            animation: tiltPhone 6s ease-in-out infinite;
+            transform-origin: center center;
+        }
+
+        @keyframes tiltPhone {
+            0%, 10% {
+                transform: rotate(0deg);
+            }
+            50%, 60% {
+                transform: rotate(-90deg);
+            }
+            100% {
+                transform: rotate(0deg);
+            }
+        }
+
+        .phone::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 6px;
+            background: #2a2a2a;
+            border-radius: 3px;
+        }
+
+        .phone::after {
+            content: '';
+            position: absolute;
+            top: 10px;
+            right: 80px;
+            width: 12px;
+            height: 12px;
+            background: #1a3a4a;
+            border-radius: 50%;
+        }
+
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f5e6d3 0%, #d4b896 100%);
+            border-radius: 28px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .board-image {
+            width: 80%;
+            height: auto;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .app-label {
+            font-size: 16px;
+            color: #4a4a4a;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .angle-display {
+            font-size: 80px;
+            font-weight: bold;
+            color: #2d2d2d;
+            margin: 15px 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .status-text {
+            font-size: 11px;
+            color: #5a5a5a;
+            opacity: 0.7;
+        }
+
+        .angle-indicator {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.9);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="phone">
+            <div class="phone-screen">
+                <img src="board.webp" alt="Climbing Board" class="board-image">
+                <div class="app-label">Board Angle Calculator Thingy™</div>
+                <div class="angle-display" id="angleDisplay">0°</div>
+                <div class="status-text">Rotate your device...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const angleDisplay = document.getElementById('angleDisplay');
+
+        let startTime = null;
+        const cycleDuration = 6000; // 6 seconds per cycle
+
+        function updateAngle(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+            const progress = (elapsed % cycleDuration) / cycleDuration;
+
+            let angle;
+            if (progress < 0.1) {
+                // First 10%: stay at 0
+                angle = 0;
+            } else if (progress < 0.5) {
+                // 10%-50%: animate from 0 to 90
+                const animProgress = (progress - 0.1) / 0.4;
+                angle = Math.round(animProgress * 90);
+            } else if (progress < 0.6) {
+                // 50%-60%: stay at 90
+                angle = 90;
+            } else {
+                // 60%-100%: animate from 90 to 0
+                const animProgress = (progress - 0.6) / 0.4;
+                angle = Math.round(90 - (animProgress * 90));
+            }
+
+            // Update display
+            angleDisplay.textContent = angle + '°';
+
+            requestAnimationFrame(updateAngle);
+        }
+
+        requestAnimationFrame(updateAngle);
+    </script>
+</body>
+</html>
